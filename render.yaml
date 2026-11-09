@@ -1,0 +1,202 @@
+# Render Blueprint — deploys the FastAPI backend from ./backend.
+# On Render: New → Blueprint → point at this repo, or New Web Service with
+# Root Directory = backend and the same build/start commands.
+services:
+  - type: web
+    name: autopilot-api
+    runtime: python
+    rootDir: backend
+    # Free demo plan: sleeps after 15 idle minutes (first request then takes
+    # ~1 minute) and has no background queue. For production use 0.5c-512mb
+    # (Starter) and enable the paid add-ons at the bottom of this file.
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: ENVIRONMENT
+        value: production
+      - key: API_PREFIX
+        value: /api
+      # Must include your Vercel frontend URL (add your custom domain later).
+      - key: CORS_ORIGINS
+        value: https://autopilotv2.vercel.app,http://localhost:3000
+      # Set this in the Render dashboard (never commit it):
+      #   mongodb+srv://<user>:<password>@autopilot.<id>.mongodb.net
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: autopilot
+      # Groq — set in the Render dashboard (never commit the key).
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: SECRET_KEY
+        generateValue: true
+      # Automation Worker — set WORKER_URL to the worker service URL below and
+      # WORKER_KEY to the same secret on BOTH services (Render dashboard).
+      - key: WORKER_URL
+        sync: false
+      - key: WORKER_KEY
+        sync: false
+      # Paid add-on: uncomment with autopilot-redis below. The API runs without it.
+      # - key: REDIS_URL
+      #   fromService:
+      #     type: keyvalue
+      #     name: autopilot-redis
+      #     property: connectionString
+      - key: SENTRY_DSN
+        sync: false
+      # Configure only after an inbound email provider and domain are ready.
+      # Job Radar source switches and API keys (see docs/platform-matrix.md).
+      - key: JOB_SOURCES_APPROVED
+        sync: false
+      - key: JOB_SOURCES_DISABLED
+        sync: false
+      - key: THE_MUSE_API_KEY
+        sync: false
+      - key: USAJOBS_API_KEY
+        sync: false
+      - key: USAJOBS_USER_AGENT
+        sync: false
+      - key: JOOBLE_API_KEY
+        sync: false
+      - key: WEB3_CAREER_TOKEN
+        sync: false
+      - key: ADZUNA_APP_ID
+        sync: false
+      - key: ADZUNA_APP_KEY
+        sync: false
+      - key: REED_API_KEY
+        sync: false
+      - key: FINDWORK_API_TOKEN
+        sync: false
+      - key: HN_COMMERCIAL_REUSE_APPROVED
+        sync: false
+      - key: REDDIT_ACCESS_TOKEN
+        sync: false
+      - key: REDDIT_COMMERCIAL_APPROVED
+        sync: false
+      - key: FREELANCER_API_APPROVED
+        sync: false
+      - key: INBOUND_EMAIL_DOMAIN
+        sync: false
+      - key: INBOUND_EMAIL_WEBHOOK_SECRET
+        sync: false
+      - key: INBOUND_EMAIL_PLATFORMS
+        sync: false
+      - key: OUTLOOK_INBOX_READ_APPROVED
+        value: "false"
+      - key: NANGO_SECRET_KEY
+        sync: false
+      - key: NANGO_BASE_URL
+        value: https://api.nango.dev
+      - key: NANGO_INTEGRATIONS
+        sync: false
+      - key: COMPOSIO_API_KEY
+        sync: false
+      - key: COMPOSIO_ALLOWED_TOOLKITS
+        sync: false
+      - key: ACTIVEPIECES_WEBHOOK_URL
+        sync: false
+      - key: ACTIVEPIECES_WEBHOOK_SECRET
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Paid add-ons — disabled for the free demo deployment.
+  # Render has no free background workers, so the scheduled job scans (and the
+  # Redis they use) are off; manual "Scan now" in Job Radar still works.
+  # To enable for production: switch autopilot-api to plan 0.5c-512mb, uncomment
+  # its REDIS_URL above, remove one leading "# " from each line below, and sync
+  # the Blueprint. The browser worker is optional either way.
+  # ---------------------------------------------------------------------------
+  # # Arq scheduler and background queue. Private to the Render service network.
+  # - type: worker
+  #   name: autopilot-queue
+  #   runtime: python
+  #   rootDir: backend
+  #   plan: 0.5c-512mb
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: arq app.queue.WorkerSettings
+  #   autoDeploy: true
+  #   envVars:
+  #     - key: PYTHON_VERSION
+  #       value: 3.12.7
+  #     - key: REDIS_URL
+  #       fromService:
+  #         type: keyvalue
+  #         name: autopilot-redis
+  #         property: connectionString
+  #     - key: MONGODB_URI
+  #       sync: false
+  #     - key: MONGODB_DB
+  #       value: autopilot
+  #     - key: ENVIRONMENT
+  #       value: production
+  #     # Scheduled scans read the same sources, so they need the same switches.
+  #     - key: JOB_SOURCES_APPROVED
+  #       sync: false
+  #     - key: JOB_SOURCES_DISABLED
+  #       sync: false
+  #     - key: THE_MUSE_API_KEY
+  #       sync: false
+  #     - key: USAJOBS_API_KEY
+  #       sync: false
+  #     - key: USAJOBS_USER_AGENT
+  #       sync: false
+  #     - key: JOOBLE_API_KEY
+  #       sync: false
+  #     - key: WEB3_CAREER_TOKEN
+  #       sync: false
+  #     - key: ADZUNA_APP_ID
+  #       sync: false
+  #     - key: ADZUNA_APP_KEY
+  #       sync: false
+  #     - key: REED_API_KEY
+  #       sync: false
+  #     - key: FINDWORK_API_TOKEN
+  #       sync: false
+  #     - key: HN_COMMERCIAL_REUSE_APPROVED
+  #       sync: false
+  #     - key: REDDIT_ACCESS_TOKEN
+  #       sync: false
+  #     - key: REDDIT_COMMERCIAL_APPROVED
+  #       sync: false
+  #     - key: FREELANCER_API_APPROVED
+  #       sync: false
+
+  # - type: keyvalue
+  #   name: autopilot-redis
+  #   plan: 256mb
+  #   maxmemoryPolicy: noeviction
+  #   ipAllowList: []
+
+  # # --- Automation Worker: browser automation runs here, NOT on the web API ---
+  # # Separate service because Playwright needs a real browser + more RAM.
+  # # After deploy: set WORKER_URL on autopilot-api to this service's URL and give
+  # # both services the same WORKER_KEY.
+  # - type: web
+  #   name: autopilot-worker
+  #   runtime: python
+  #   rootDir: worker
+  #   plan: free
+  #   buildCommand: pip install -r requirements.txt && playwright install --with-deps chromium
+  #   startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+  #   healthCheckPath: /health
+  #   autoDeploy: true
+  #   envVars:
+  #     - key: PYTHON_VERSION
+  #       value: 3.12.7
+  #     - key: WORKER_KEY
+  #       sync: false   # must match the API service's WORKER_KEY
+  #     # LLM for the browser agent (any OpenAI-compatible key works):
+  #     - key: OPENAI_API_KEY
+  #       sync: false
+  #     - key: WORKER_MODEL
+  #       value: gpt-4o-mini
+  #     - key: WORKER_MAX_STEPS
+  #       value: "25"

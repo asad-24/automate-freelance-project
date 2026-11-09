@@ -1,0 +1,7 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+# Real browser engine — installed on the deployed worker. Without these the
+# worker runs in simulation mode so the queue/approval flow still works.
+browser-use==0.1.40
+playwright==1.47.0
